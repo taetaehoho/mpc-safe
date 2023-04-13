@@ -1,0 +1,33 @@
+{
+	"name": "frontend-new",
+	"version": "0.1.0",
+	"private": true,
+	"scripts": {
+		"dev": "next dev",
+		"build": "next build",
+		"start": "next start",
+		"lint": "next lint",
+		"marketplace": "npx create-web3-dapp marketplace"
+	},
+	"dependencies": {
+		"@chakra-ui/react": "^2.5.5",
+		"@emotion/react": "^11.10.6",
+		"@emotion/styled": "^11.10.6",
+		"@rainbow-me/rainbowkit": "^0.12.4",
+		"@safe-global/auth-kit": "^0.1.1",
+		"@safe-global/safe-react-components": "^2.0.5",
+		"@web3auth/base": "^5.1.0",
+		"@web3auth/modal": "^5.1.1",
+		"@web3auth/openlogin-adapter": "^5.1.1",
+		"alchemy-sdk": "^2.6.2",
+		"framer-motion": "^10.11.6",
+		"next": "13.1.2",
+		"react": "18.2.0",
+		"react-dom": "18.2.0",
+		"wagmi": "^0.12.6"
+	},
+	"devDependencies": {
+		"eslint": "8.36.0",
+		"eslint-config-next": "13.2.4"
+	}
+}
