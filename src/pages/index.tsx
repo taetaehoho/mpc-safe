@@ -325,7 +325,7 @@ const GoogleMintPKPPage = () => {
     const initializer = await safeFactory['encodeSetupCallData'](safeAccountConfig)
     const saltNonce = (Date.now() * 1000 + Math.floor(Math.random() * 1000)).toString()
     const from = safeAuth.safeAuthData.eoa;
-    const to = '0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2';
+    const to = '0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2'; //goerli safe factory address
 
     const value = BigNumber.from(0);
 
@@ -333,7 +333,7 @@ const GoogleMintPKPPage = () => {
 
     const abi = ["function createProxyWithNonce(address _singleton, bytes initializer, uint256 saltNonce)"];
 
-    const safeFactoryAddress = '0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2'
+    const safeFactoryAddress = '0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2'  //goerli safe factory address
     const contract = new ethers.Contract(safeFactoryAddress, abi, provider);
     const safeSingleTonAddress = '0x3E5c63644E683549055b9Be8653de26E0B4CD36E'
     const unsignedTransaction = await contract.populateTransaction.createProxyWithNonce(safeSingleTonAddress, initializer, saltNonce)
@@ -351,10 +351,7 @@ const GoogleMintPKPPage = () => {
     // eth_signTransaction parameters
     // Transaction - Object
     // Reference: https://ethereum.github.io/execution-apis/api-documentation/#eth_signTransaction
-    const payload = {
-      method: 'eth_sendTransaction',
-      params: [txParams],
-    };
+
     const txRes = await pkpwallet.handleRequest<ETHTxRes>({
       method: 'eth_sendTransaction',
       params: [txParams],
