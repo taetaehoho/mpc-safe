@@ -1,18 +1,14 @@
 # PKP x Google x Safe 🪢
 
-This is an example web app that shows how you can mint and use programmable key pairs (PKPs) with just Google account. With PKPs, you can build distributed and customizable MPC wallets. Learn more about PKPs [here](https://developer.litprotocol.com/pkp/wallets/intro).
+This is an example web app that shows how you can mint and use programmable key pairs (PKPs) with just Google account. Furthermore, you can use this PKP with our customize wallet adater to connect with safe. With all these connectivity, you can create a Safe with PKP wallet and Sign a Safe transaction. In the future, we will even support the PKP wallet created by WebAuthn so anyone can use FaceID to create a Safe.
 
-Check out the [live demo](https://pkp-social-auth-example.vercel.app/).
+Check out the [live demo](https://eth-tokyo-0414.vercel.app/).
 
 ## 💻 Getting Started
 
 1. Clone this repo and install dependencies:
 
 ```bash
-git clone git@github.com:LIT-Protocol/pkp-social-auth-example.git
-
-cd pkp-social-auth-example
-
 yarn install
 ```
 
