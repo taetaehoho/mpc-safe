@@ -5,7 +5,6 @@ import { PKPEthersWallet } from "@lit-protocol/pkp-ethers"
 import { PKPClient } from '@lit-protocol/pkp-client';
 import { AuthSig, SafeAuthAdapter, SessionSigs } from '../../types'
 import { LitAuthEvent, LitAuthEventListener } from './types'
-import { LitPKP } from 'lit-pkp-sdk'
 
 
 /**

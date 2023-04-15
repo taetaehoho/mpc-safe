@@ -1,4 +1,4 @@
-# PKP x Google OAuth Web Example 🪢
+# PKP x Google x Safe 🪢
 
 This is an example web app that shows how you can mint and use programmable key pairs (PKPs) with just Google account. With PKPs, you can build distributed and customizable MPC wallets. Learn more about PKPs [here](https://developer.litprotocol.com/pkp/wallets/intro).
 
