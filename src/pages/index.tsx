@@ -135,6 +135,7 @@ const ActionButton = styled.button`
   }
 `;
 const GoogleMintPKPPage = () => {
+  console.log("RPC_URL: ", RPC_URL)
   const router = useRouter();
   const [view, setView] = useState(Views.SIGN_IN);
   const [error, setError] = useState();
@@ -396,7 +397,7 @@ const GoogleMintPKPPage = () => {
       console.log('provider: ', provider)
       console.log('get rpc: ', pkpwallet.getRpc())
       // await pkpwallet.setRpc('https://eth-goerli.g.alchemy.com/v2/SKIuCInnDuvAmdTn6j-WCkiSAGZAiNUr')
-      await pkpwallet.setRpc(PRC_URL)
+      await pkpwallet.setRpc(RPC_URL)
       console.log('get rpc: ', pkpwallet.getRpc())
       const ethAdapter = new EthersAdapter({
         ethers,
