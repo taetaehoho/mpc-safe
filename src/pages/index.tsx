@@ -108,6 +108,31 @@ const MintPKPButton = styled.button`
   background-color: #fff;
   transition: background-color 0.3s ease-in-out;
 `
+const ActionButtonContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+`;
+
+const ActionButton = styled.button`
+  background-color: #12ff80;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease-in-out;
+  
+  &:hover {
+    background-color: #0edc6f;
+  }
+  
+  &:active {
+    background-color: #0dbf62;
+  }
+`;
 const GoogleMintPKPPage = () => {
   const router = useRouter();
   const [view, setView] = useState(Views.SIGN_IN);
@@ -531,11 +556,32 @@ const GoogleMintPKPPage = () => {
               <h1>Welcome to the SAFE x Google Auth x Lit</h1>
               <h2>{">>> Sign in with Lit"}</h2>
             </div>
-            <GoogleSignInButton onClick={signInWithGoogle} style={{ padding: '16px', borderRadius: '8px' }}>
+            <button onClick={signInWithGoogle} style={{
+              backgroundColor: '#fff',
+              border: 'none',
+              borderRadius: '4px',
+              color: '#fff',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              height: '40px',
+              padding: '8px 16px',
+              transition: 'background-color 0.3s ease-in-out',
+            }}>
               {/* <img src={googleLogo} /> */}
 
-              <GradientText>Sign in with Google</GradientText>
-            </GoogleSignInButton>
+              <span
+                style={{
+                  backgroundImage: 'linear-gradient(to right, #4285F4, #34A853, #FBBC05, #EA4335)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}
+              >Sign in with Google</span>
+            </button>
           </div>
         )}
         {view === Views.HANDLE_REDIRECT && (
@@ -600,20 +646,22 @@ const GoogleMintPKPPage = () => {
           </>
         )}
         {view === Views.SESSION_CREATED && (
-          <>
+          <div style={{ display: "flex", flexDirection: 'column', gap: 24 }}>
             <h1>Ready for the open web</h1>
             <div>
-              <p>Check out your PKP:</p>
+              <p>Your currenct PKP:</p>
               <p>{currentPKP.ethAddress}</p>
             </div>
             <hr></hr>
-            <div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <p>Sign this message with your PKP:</p>
               <p>{message}</p>
-              <button onClick={signMessage}>Sign message</button>
-              <button onClick={createSafeAuthWallet}>Connect safe auth kit</button>
-              <button onClick={() => setCreateSafeModalOpen(true)}>Create safe</button>
-              <button onClick={() => setSignSafeTransactionModalOpen(true)}>Sign safe transaction</button>
+              <ActionButtonContainer >
+                <ActionButton onClick={signMessage}>Sign message</ActionButton>
+                <ActionButton onClick={createSafeAuthWallet}>Connect safe auth kit</ActionButton>
+                <ActionButton onClick={() => setCreateSafeModalOpen(true)}>Create safe</ActionButton>
+                <ActionButton onClick={() => setSignSafeTransactionModalOpen(true)}>Sign safe transaction</ActionButton>
+              </ActionButtonContainer>
               <Modal
                 open={isCreateSafeModalOpen}
                 onClose={() => { setCreateSafeModalOpen(false) }}
@@ -630,27 +678,30 @@ const GoogleMintPKPPage = () => {
                     bgcolor: 'background.paper',
                     border: '2px solid #000',
                     boxShadow: 24,
+                    borderRadius: 8,
                     p: 4,
                   }
                 }>
-                  <Typography id="modal-modal-title" variant="h6" component="h2">
+                  <Typography id="modal-modal-title" variant="h6" component="h2" sx={{ color: '#000' }}>
                     Input your owner address
                   </Typography>
-                  <div style={{ dispay: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <Typography>Regular wallet</Typography>
-                    <div>
+                  <div style={{ dispay: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div style={{ dispay: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <Typography sx={{ color: '#000', marginTop: '12px' }}>Regular wallet</Typography>
+                      <div style={{ marginTop: '12px' }}>
 
-                      <TextField label='Owner 1' hiddenLabel sx={{ width: '100%' }} value={address1} onChange={(e) => setAddress1(e.target.value)} />
+                        <TextField label='Owner 1' hiddenLabel sx={{ width: '100%' }} value={address1} onChange={(e) => setAddress1(e.target.value)} />
+                      </div>
+                      <div style={{ marginTop: '12px' }}>
+                        <TextField label='Owner 2' hiddenLabel sx={{ width: '100%' }} value={address2} onChange={(e) => setAddress2(e.target.value)} />
+                      </div>
                     </div>
-                    <div>
-                      <TextField label='Owner 2' hiddenLabel sx={{ width: '100%' }} value={address2} onChange={(e) => setAddress2(e.target.value)} />
-                    </div>
-                    <Typography >Social wallet</Typography>
-                    <div>
+                    <Typography sx={{ color: '#000', marginTop: '12px' }}>Social wallet</Typography>
+                    <div style={{ marginTop: '12px' }}>
                       <TextField label='Owner 3' hiddenLabel value={safeAuth?.safeAuthData?.eoa} sx={{ width: '100%' }} />
                     </div>
                   </div>
-                  <Button variant="outlined" sx={{ marginTop: '32px', width: '100%' }} onClick={createSafe}>Creaet Button</Button>
+                  <ActionButton style={{ marginTop: '32px', width: '100%' }} onClick={createSafe}>Creaet Button</ActionButton>
                 </Box>
                 {/* <Button >Create Safe</Button> */}
 
@@ -668,15 +719,16 @@ const GoogleMintPKPPage = () => {
                     border: '2px solid #000',
                     boxShadow: 24,
                     p: 4,
+                    borderRadius: 8,
                     overflow: 'scroll'
                   }
                 }>
 
-                  <Typography id="modal-modal-title" variant="h6" component="h2">
+                  <Typography id="modal-modal-title" variant="h6" component="h2" sx={{ color: '#000' }}>
                     Sign your safe transaction
                   </Typography>
                   <div style={{ dispay: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <Typography>Previous singer data</Typography>
+                    <Typography sx={{ color: '#000', marginTop: '12px' }}>Previous singer data</Typography>
                     <div>
                       <TextField label='first signer address' fullWidth onChange={(e) => setFirstSignerSignature({
                         ...firstSignerSignature,
@@ -694,7 +746,7 @@ const GoogleMintPKPPage = () => {
                       />
                     </div>
 
-                    <Typography>Domain data</Typography>
+                    <Typography sx={{ color: '#000', marginTop: '12px' }}>Domain data</Typography>
                     <div>
                       <TextField label='verifying contract' fullWidth onChange={(e) => setDomainData({
                         ...domainData,
@@ -710,7 +762,7 @@ const GoogleMintPKPPage = () => {
                       })}
                         value={domainData?.chainId} />
                     </div>
-                    <Typography>Safe transaction data</Typography>
+                    <Typography sx={{ color: '#000' }}>Safe transaction data</Typography>
                     <div>
                       <TextField label='to' fullWidth onChange={(e) => setSafeTypeData({
                         ...safeTypeData,
@@ -793,22 +845,22 @@ const GoogleMintPKPPage = () => {
                       {safeSignature}
                     </Typography>
                   </div>
-                  <Button variant="outlined" sx={{ marginTop: '32px', width: '100%' }} onClick={signSafeTransaction}>Sign Safe Transaction</Button>
+                  <ActionButton style={{ marginTop: '32px', width: '100%' }} onClick={signSafeTransaction}>Sign Safe Transaction</ActionButton>
                 </Box>
               </Modal>
 
               {signature && (
-                <>
+                <div style={{ display: "flex", flexDirection: 'column', gap: 6 }}>
                   <h3>Your signature:</h3>
                   <p>{signature}</p>
                   <h3>Recovered address:</h3>
                   <p>{recoveredAddress}</p>
                   <h3>Verified:</h3>
                   <p>{verified ? 'true' : 'false'}</p>
-                </>
+                </div>
               )}
             </div>
-          </>
+          </div>
         )}
       </main>
     </div>
