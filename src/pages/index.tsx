@@ -712,7 +712,7 @@ const GoogleMintPKPPage = () => {
                       <TextField label='Owner 3' hiddenLabel value={safeAuth?.safeAuthData?.eoa} sx={{ width: '100%' }} />
                     </div>
                   </div>
-                  <ActionButton style={{ marginTop: '32px', width: '100%' }} onClick={createSafe}>Creaet Button</ActionButton>
+                  <ActionButton style={{ marginTop: '32px', width: '100%' }} onClick={createSafe}>Create Button</ActionButton>
                 </Box>
                 {/* <Button >Create Safe</Button> */}
 
