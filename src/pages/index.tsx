@@ -31,7 +31,7 @@ import { arrayify } from 'ethers/lib/utils';
 import { buildSignatureBytes, SafeSignature } from '@/utils/buildtx';
 import styled from 'styled-components';
 import toast from 'react-hot-toast';
-import { RPC_URL } from '../../app_config';
+import { CHAIN_ID, RPC_URL } from '../../app_config';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -430,7 +430,7 @@ const GoogleMintPKPPage = () => {
       const txParams = {
         from,
         to,
-        chainId: 5,
+        chainId: CHAIN_ID,
         value,
         data,
       };
@@ -448,6 +448,7 @@ const GoogleMintPKPPage = () => {
       console.log("txRes: ", await txRes.wait())
     } catch (err) {
       toast.error('Error creating safe: ' + err.message + ' , Please try again later')
+      console.log(err)
     }
 
     // fetch('/api/create-safe', {
@@ -509,7 +510,7 @@ const GoogleMintPKPPage = () => {
     const txParams = {
       from,
       to,
-      chainId: 5,
+      chainId: CHAIN_ID,
       value,
       data,
     };
