@@ -19,3 +19,9 @@ yarn dev
 ```
 
 3. Visit [http://localhost:3000](http://localhost:3000) to start playing with the app.
+
+Ux optimization strategies
+- we implemented Google Oauth to sign and create safes! Instead of having to pull out your ledger you can simply sign with your google ID. 
+- Relevant aspects are https://github.com/taetaehoho/tokyo-frontend/blob/main/src/auth-kit/LitSafeAuthKit.ts where we made the safe auth sdk work with LitPKPs and https://github.com/taetaehoho/tokyo-frontend/blob/main/src/auth-kit/packs/web3auth/LitAuthAdapter.ts where we created a custom wallet adapter for LitPkps 
+
+
