@@ -1,8 +1,9 @@
 import { IAdapter } from '@web3auth/base'
 import { ModalConfig } from '@web3auth/modal'
 
-import { PKPWallet } from "@lit-protocol/pkp-ethers"
-import { AuthSig, SafeAuthAdapter } from '../../types'
+import { PKPEthersWallet } from "@lit-protocol/pkp-ethers"
+import { PKPClient } from '@lit-protocol/pkp-client';
+import { AuthSig, SafeAuthAdapter, SessionSigs } from '../../types'
 import { LitAuthEvent, LitAuthEventListener } from './types'
 import { LitPKP } from 'lit-pkp-sdk'
 
@@ -12,9 +13,9 @@ import { LitPKP } from 'lit-pkp-sdk'
  * @class
  */
 export class LitAuthAdapter implements SafeAuthAdapter<LitAuthAdapter> {
-  provider: PKPWallet | null
+  provider: PKPEthersWallet | null
   pkpPubKey: string
-  authSig: AuthSig
+  authSig: SessionSigs
   authType: number
   #adapters?: IAdapter<unknown>[]
   #modalConfig?: Record<string, ModalConfig>
@@ -29,7 +30,7 @@ export class LitAuthAdapter implements SafeAuthAdapter<LitAuthAdapter> {
       authSig,
     }: {
       pkpPubKey: string,
-      authSig: AuthSig,
+      authSig: SessionSigs,
     },
     adapters?: IAdapter<unknown>[],
     modalConfig?: Record<string, ModalConfig>
@@ -46,13 +47,19 @@ export class LitAuthAdapter implements SafeAuthAdapter<LitAuthAdapter> {
     try {
       console.log('start init')
       console.log('init a lit pkp')
-      const wallet = new PKPWallet({
+      console.log('this.authSig', this.authSig)
+      const authSig = { "sig": "0x2e4611feacd8bb74f2aaad7aecae5dbc01380b8ccf14054ad14e065eab836410419194b0d896133e30f6780f2bbb28e3ae1618771cc2f6bc6f4bda9cf53d2d3f1c", "derivedVia": "web3.eth.personal.sign", "signedMessage": "demo-encrypt-decrypt-react.vercel.app wants you to sign in with your Ethereum account:\n0x6F9DE51F2fD0e8Ee1B3E55182b0C601f0636c250\n\n\nURI: https://demo-encrypt-decrypt-react.vercel.app/\nVersion: 1\nChain ID: 1\nNonce: Ct2sJKohbVHGiI8oR\nIssued At: 2023-04-15T13:43:42.366Z\nExpiration Time: 2023-04-22T13:43:34.131Z", "address": "0x6f9de51f2fd0e8ee1b3e55182b0c601f0636c250" }
+      const wallet = new PKPClient({
         pkpPubKey: this.pkpPubKey,
-        controllerAuthSig: this.authSig,
-        provider: "https://polygon-mumbai.g.alchemy.com/v2/CqeGcxivEEmE_xvbnbvE3bRIYCigwHIm",
+        // pkpPubKey: '0x045003082571d49181c9e8d4fa1eae1def5c235452f30b9bec3a986924f7cbd73c65488ff6b067aa89247912d389f6a294539c97216392bd3a3e8cf3f8a5f2b3f1',
+        // controllerSessionSigs: this.authSig,
+        controllerAuthSig: Object.values(this.authSig)[0],
+        // controllerAuthSig: authSig,
+        rpc: "https://eth-goerli.g.alchemy.com/v2/SKIuCInnDuvAmdTn6j-WCkiSAGZAiNUr",
       });
-      await wallet.init();
-      this.provider = wallet;
+      await wallet.connect();
+      const etherWallet = wallet.getEthWallet()
+      this.provider = etherWallet;
       console.log('end init')
 
     } catch (e) {

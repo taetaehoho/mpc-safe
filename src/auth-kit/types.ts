@@ -1,9 +1,10 @@
 import { ExternalProvider, JsonRpcProvider } from '@ethersproject/providers'
 import { LitAuthEvent, LitAuthEventListener } from './packs/web3auth/types'
 import { LitAuthAdapter } from './packs/web3auth/LitAuthAdapter'
-import { PKPWallet } from "@lit-protocol/pkp-ethers"
+import { PKPEthersWallet } from "@lit-protocol/pkp-ethers"
 import { EthersAdapter } from '@safe-global/protocol-kit'
 import { LitPKP } from 'lit-pkp-sdk'
+import { PKPClient } from '@lit-protocol/pkp-client';
 
 export interface SafeAuthSignInData {
   eoa: string
@@ -11,7 +12,7 @@ export interface SafeAuthSignInData {
 }
 
 export interface SafeAuthAdapter<TAdapter> {
-  provider: PKPWallet | null
+  provider: PKPEthersWallet | null
   pkpPubKey: string
   authSig: any
   init(): Promise<void>
@@ -24,7 +25,7 @@ export interface SafeAuthAdapter<TAdapter> {
 export interface ISafeAuthKit<TAdapter> {
   signIn(): Promise<SafeAuthSignInData>
   signOut(): Promise<void>
-  getProvider(): PKPWallet | null
+  getProvider(): PKPEthersWallet | null
   subscribe(event: SafeAuthEvent<TAdapter>, listener: SafeAuthEventListener<TAdapter>): void
   unsubscribe(event: SafeAuthEvent<TAdapter>, listener: SafeAuthEventListener<TAdapter>): void
 }
@@ -42,8 +43,10 @@ export type SessionSigs = {
   [key: string]: AuthSig
 }
 export type AuthSig = {
+  sig: string
   address: string
-  algo: string
+  algo?: []
   derivedVia: string
   signedMessage: string
+  capabilities?: [];
 }

@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { LitNodeClient } from '@lit-protocol/lit-node-client';
 import Safe, { SafeFactory, SafeAccountConfig } from '@safe-global/protocol-kit'
 
-import { BigNumber, ethers } from 'ethers';
+import { BigNumber, ethers, Transaction } from 'ethers';
 import {
   getLoginUrl,
   isSignInRedirect,
@@ -23,7 +23,9 @@ import { LitAuthAdapter } from '@/auth-kit/packs/web3auth/LitAuthAdapter';
 import { PKP } from '@/types/pkp';
 import { Box, Button, Modal, TextField, Typography } from '@mui/material';
 import { EthersAdapter } from '@safe-global/protocol-kit'
-
+import { ethRequestHandler, } from '@lit-protocol/pkp-ethers'
+import { ETHTxRes } from '@lit-protocol/pkp-ethers/src/lib/pkp-ethers-types';
+import { headers } from '../../next.config';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -168,13 +170,14 @@ const GoogleMintPKPPage = () => {
           // and combined into a full signature by the LitJsSdk for you to use on the client
           // all the params (toSign, publicKey, sigName) are passed in from the LitJsSdk.executeJs() function
           const sigShare = await LitActions.signEcdsa({ toSign, publicKey, sigName });
+
         };
         go();
       `;
       // Sign message
       const results = await litNodeClient.executeJs({
         code: litActionCode,
-        sessionSigs,
+        sessionSigs: sessionSigs,
         jsParams: {
           toSign: toSign,
           publicKey: currentPKP.publicKey,
@@ -261,6 +264,10 @@ const GoogleMintPKPPage = () => {
     const owners = [address1, address2, safeAuth.safeAuthData.eoa]
     const threshold = 2
     const provider = pkpwallet.rpcProvider
+    console.log('provider: ', provider)
+    console.log('get rpc: ', pkpwallet.getRpc())
+    await pkpwallet.setRpc('https://eth-goerli.g.alchemy.com/v2/SKIuCInnDuvAmdTn6j-WCkiSAGZAiNUr')
+    console.log('get rpc: ', pkpwallet.getRpc())
     const ethAdapter = new EthersAdapter({
       ethers,
       signerOrProvider: provider,
@@ -275,10 +282,10 @@ const GoogleMintPKPPage = () => {
     const initializer = await safeFactory['encodeSetupCallData'](safeAccountConfig)
     const saltNonce = (Date.now() * 1000 + Math.floor(Math.random() * 1000)).toString()
     const from = safeAuth.safeAuthData.eoa;
-    const to = 'SafeProxyFactoryAddress';
-    const gasLimit = BigNumber.from('100000');
+    const to = '0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2';
+
     const value = BigNumber.from(0);
-    const data = '0x';
+
     // pkp-ethers signer will automatically add missing fields (nonce, chainId, gasPrice, gasLimit)
 
     const abi = ["function createProxyWithNonce(address _singleton, bytes initializer, uint256 saltNonce)"];
@@ -287,23 +294,39 @@ const GoogleMintPKPPage = () => {
     const contract = new ethers.Contract(safeFactoryAddress, abi, provider);
     const safeSingleTonAddress = '0x3E5c63644E683549055b9Be8653de26E0B4CD36E'
     const unsignedTransaction = await contract.populateTransaction.createProxyWithNonce(safeSingleTonAddress, initializer, saltNonce)
+    const data = unsignedTransaction.data;
     console.log("unsignedTransaction: ", unsignedTransaction)
-    // const txParams = {
-    //   from,
-    //   to,
-    //   gasLimit,
-    //   value,
-    //   data,
-    // };
+    const txParams = {
+      from,
+      to,
+      chainId: 5,
+      value,
+      data,
+    };
     // console.log()
 
     // eth_signTransaction parameters
     // Transaction - Object
     // Reference: https://ethereum.github.io/execution-apis/api-documentation/#eth_signTransaction
-    // const payload = {
-    //   method: 'eth_signTransaction',
-    //   params: [unsignedTransaction],
-    // };
+    const payload = {
+      method: 'eth_sendTransaction',
+      params: [txParams],
+    };
+    const txRes = await pkpwallet.handleRequest<ETHTxRes>({
+      method: 'eth_sendTransaction',
+      params: [txParams],
+    });
+    // await txRes.
+    console.log("txRes: ", await txRes.wait())
+
+    // fetch('/api/create-safe', {
+    //   method: "POST",
+    //   body: JSON.stringify(txParams),
+    //   headers: {
+    //     'Content-Type': 'application/json'
+    //   }
+    // })
+    // console.log(txRes)
 
     // // Initialize Lit PKP Wallet
     // const wallet = new LitPKP({
@@ -319,6 +342,7 @@ const GoogleMintPKPPage = () => {
 
   }
   console.log("safeAuth: ", safeAuth?.safeAuthData.eoa)
+  console.log('safes:', safeAuth?.safeAuthData.safes)
   return (
     <>
       <Head>
