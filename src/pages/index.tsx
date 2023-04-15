@@ -30,7 +30,8 @@ import { EIP712_SAFE_TX_TYPE, SafeDomainData, SafeTransaction } from '@/types/ei
 import { arrayify } from 'ethers/lib/utils';
 import { buildSignatureBytes, SafeSignature } from '@/utils/buildtx';
 import styled from 'styled-components';
-
+import toast from 'react-hot-toast';
+import { RPC_URL } from '../../app_config';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -387,61 +388,66 @@ const GoogleMintPKPPage = () => {
   const createSafe = async () => {
     if (!address1 || !address2) return
     if (!safeAuth) return
-    const pkpwallet = safeAuth.getProvider()
-    const owners = [address1, address2, safeAuth.safeAuthData.eoa]
-    const threshold = 2
-    const provider = pkpwallet.rpcProvider
-    console.log('provider: ', provider)
-    console.log('get rpc: ', pkpwallet.getRpc())
-    await pkpwallet.setRpc('https://eth-goerli.g.alchemy.com/v2/SKIuCInnDuvAmdTn6j-WCkiSAGZAiNUr')
-    console.log('get rpc: ', pkpwallet.getRpc())
-    const ethAdapter = new EthersAdapter({
-      ethers,
-      signerOrProvider: provider,
-      // aiProtectorAddress: PROTECTOR,
-    })
-    const safeAccountConfig = {
-      owners,
-      threshold
+    try {
+      const pkpwallet = safeAuth.getProvider()
+      const owners = [address1, address2, safeAuth.safeAuthData.eoa]
+      const threshold = 2
+      const provider = pkpwallet.rpcProvider
+      console.log('provider: ', provider)
+      console.log('get rpc: ', pkpwallet.getRpc())
+      // await pkpwallet.setRpc('https://eth-goerli.g.alchemy.com/v2/SKIuCInnDuvAmdTn6j-WCkiSAGZAiNUr')
+      await pkpwallet.setRpc(PRC_URL)
+      console.log('get rpc: ', pkpwallet.getRpc())
+      const ethAdapter = new EthersAdapter({
+        ethers,
+        signerOrProvider: provider,
+        // aiProtectorAddress: PROTECTOR,
+      })
+      const safeAccountConfig = {
+        owners,
+        threshold
+      }
+
+      const safeFactory = await SafeFactory.create({ ethAdapter: ethAdapter })
+      const initializer = await safeFactory['encodeSetupCallData'](safeAccountConfig)
+      const saltNonce = (Date.now() * 1000 + Math.floor(Math.random() * 1000)).toString()
+      const from = safeAuth.safeAuthData.eoa;
+      const to = '0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2'; //goerli safe factory address
+
+      const value = BigNumber.from(0);
+
+      // pkp-ethers signer will automatically add missing fields (nonce, chainId, gasPrice, gasLimit)
+
+      const abi = ["function createProxyWithNonce(address _singleton, bytes initializer, uint256 saltNonce)"];
+
+      const safeFactoryAddress = '0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2'  //goerli safe factory address
+      const contract = new ethers.Contract(safeFactoryAddress, abi, provider);
+      const safeSingleTonAddress = '0x3E5c63644E683549055b9Be8653de26E0B4CD36E'
+      const unsignedTransaction = await contract.populateTransaction.createProxyWithNonce(safeSingleTonAddress, initializer, saltNonce)
+      const data = unsignedTransaction.data;
+      console.log("unsignedTransaction: ", unsignedTransaction)
+      const txParams = {
+        from,
+        to,
+        chainId: 5,
+        value,
+        data,
+      };
+      // console.log()
+
+      // eth_signTransaction parameters
+      // Transaction - Object
+      // Reference: https://ethereum.github.io/execution-apis/api-documentation/#eth_signTransaction
+
+      const txRes = await pkpwallet.handleRequest<ETHTxRes>({
+        method: 'eth_sendTransaction',
+        params: [txParams],
+      });
+      // await txRes.gi
+      console.log("txRes: ", await txRes.wait())
+    } catch (err) {
+      toast.error('Error creating safe: ' + err.message + ' , Please try again later')
     }
-
-    const safeFactory = await SafeFactory.create({ ethAdapter: ethAdapter })
-    const initializer = await safeFactory['encodeSetupCallData'](safeAccountConfig)
-    const saltNonce = (Date.now() * 1000 + Math.floor(Math.random() * 1000)).toString()
-    const from = safeAuth.safeAuthData.eoa;
-    const to = '0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2'; //goerli safe factory address
-
-    const value = BigNumber.from(0);
-
-    // pkp-ethers signer will automatically add missing fields (nonce, chainId, gasPrice, gasLimit)
-
-    const abi = ["function createProxyWithNonce(address _singleton, bytes initializer, uint256 saltNonce)"];
-
-    const safeFactoryAddress = '0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2'  //goerli safe factory address
-    const contract = new ethers.Contract(safeFactoryAddress, abi, provider);
-    const safeSingleTonAddress = '0x3E5c63644E683549055b9Be8653de26E0B4CD36E'
-    const unsignedTransaction = await contract.populateTransaction.createProxyWithNonce(safeSingleTonAddress, initializer, saltNonce)
-    const data = unsignedTransaction.data;
-    console.log("unsignedTransaction: ", unsignedTransaction)
-    const txParams = {
-      from,
-      to,
-      chainId: 5,
-      value,
-      data,
-    };
-    // console.log()
-
-    // eth_signTransaction parameters
-    // Transaction - Object
-    // Reference: https://ethereum.github.io/execution-apis/api-documentation/#eth_signTransaction
-
-    const txRes = await pkpwallet.handleRequest<ETHTxRes>({
-      method: 'eth_sendTransaction',
-      params: [txParams],
-    });
-    // await txRes.gi
-    console.log("txRes: ", await txRes.wait())
 
     // fetch('/api/create-safe', {
     //   method: "POST",
@@ -494,7 +500,8 @@ const GoogleMintPKPPage = () => {
     const abi = ["function execTransaction(address to, uint256 value, bytes data, uint8 operation, uint256 safeTxGas, uint256 baseGas, uint256 gasPrice, address gasToken, address refundReceiver, bytes signatures)"]
     const provider = pkpwallet.rpcProvider
     const contract = new ethers.Contract(to, abi, provider);
-    await pkpwallet.setRpc('https://eth-goerli.g.alchemy.com/v2/SKIuCInnDuvAmdTn6j-WCkiSAGZAiNUr')
+    // await pkpwallet.setRpc('https://eth-goerli.g.alchemy.com/v2/SKIuCInnDuvAmdTn6j-WCkiSAGZAiNUr')
+    await pkpwallet.setRpc(RPC_URL)
     const unsignedTransaction = await contract.populateTransaction.execTransaction(safeTypeData.to, safeTypeData.value, safeTypeData.data, safeTypeData.operation, safeTypeData.safeTxGas, safeTypeData.baseGas, safeTypeData.gasPrice, safeTypeData.gasToken, safeTypeData.refundReceiver, signatureBytes)
     const data = unsignedTransaction.data;
     console.log("unsignedTransaction: ", unsignedTransaction)
@@ -661,6 +668,9 @@ const GoogleMintPKPPage = () => {
                 <ActionButton onClick={createSafeAuthWallet}>Connect safe auth kit</ActionButton>
                 <ActionButton onClick={() => setCreateSafeModalOpen(true)}>Create safe</ActionButton>
                 <ActionButton onClick={() => setSignSafeTransactionModalOpen(true)}>Sign safe transaction</ActionButton>
+                {/* <ActionButton onClick={() => {
+                  toast.error('error message, please try it again')
+                }}>Error</ActionButton> */}
               </ActionButtonContainer>
               <Modal
                 open={isCreateSafeModalOpen}
