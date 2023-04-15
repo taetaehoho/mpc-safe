@@ -5,7 +5,7 @@ import { Inter } from 'next/font/google';
 import { useCallback, useEffect, useState } from 'react';
 import { LitNodeClient } from '@lit-protocol/lit-node-client';
 import Safe, { SafeFactory, SafeAccountConfig } from '@safe-global/protocol-kit'
-
+import googleLogo from '../assets/google-logo.png'
 import { BigNumber, ethers, Transaction, utils } from 'ethers';
 import {
   getLoginUrl,
@@ -29,6 +29,7 @@ import { headers } from '../../next.config';
 import { EIP712_SAFE_TX_TYPE, SafeDomainData, SafeTransaction } from '@/types/eip712safe';
 import { arrayify } from 'ethers/lib/utils';
 import { buildSignatureBytes, SafeSignature } from '@/utils/buildtx';
+import styled from 'styled-components';
 
 
 const inter = Inter({ subsets: ['latin'] });
@@ -49,6 +50,64 @@ const Views = {
 
 };
 
+const GoogleSignInButton = styled.button`
+  background-color: #fff;
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: bold;
+  height: 40px;
+  padding: 8px 16px;
+  transition: background-color 0.3s ease-in-out;
+  &:hover {
+    background-color: #eee;
+  }
+
+  &:active {
+    background-color: #ddd;
+  }
+`;
+
+const GradientText = styled.span`
+  background-image: linear-gradient(to right, #4285F4, #34A853, #FBBC05, #EA4335);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+`
+const PKPButton = styled.button`
+  background-color: #ff9e5c;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 12px 24px;
+  transition: background-color 0.3s ease-in-out;
+
+  &:hover {
+    background-color: #ff8a3d;
+  }
+
+  &:active {
+    background-color: #ff7a2e;
+  }
+`;
+
+const MintPKPButton = styled.button`
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 12px 24px;
+  color: #000;
+  background-color: #fff;
+  transition: background-color 0.3s ease-in-out;
+`
 const GoogleMintPKPPage = () => {
   const router = useRouter();
   const [view, setView] = useState(Views.SIGN_IN);
@@ -433,7 +492,7 @@ const GoogleMintPKPPage = () => {
   console.log("safeAuth: ", safeAuth?.safeAuthData.eoa)
   console.log('safes:', safeAuth?.safeAuthData.safes)
   return (
-    <>
+    <div style={{ height: '100vh' }}>
       <Head>
         <title>Lit x Google OAuth x Safe</title>
         <meta
@@ -443,7 +502,7 @@ const GoogleMintPKPPage = () => {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className={`${inter.className}`}>
+      <main className={`${inter.className}`} style={{ display: 'flex', justifyContent: 'center', alignItems: "center", height: '100%' }}>
         {view === Views.ERROR && (
           <>
             <h1>Error</h1>
@@ -467,10 +526,17 @@ const GoogleMintPKPPage = () => {
           </>
         )}
         {view === Views.SIGN_IN && (
-          <>
-            <h1>Sign in with Lit</h1>
-            <button onClick={signInWithGoogle}>Google</button>
-          </>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }} >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <h1>Welcome to the SAFE x Google Auth x Lit</h1>
+              <h2>{">>> Sign in with Lit"}</h2>
+            </div>
+            <GoogleSignInButton onClick={signInWithGoogle} style={{ padding: '16px', borderRadius: '8px' }}>
+              {/* <img src={googleLogo} /> */}
+
+              <GradientText>Sign in with Google</GradientText>
+            </GoogleSignInButton>
+          </div>
         )}
         {view === Views.HANDLE_REDIRECT && (
           <>
@@ -485,24 +551,31 @@ const GoogleMintPKPPage = () => {
         {view === Views.FETCHED && (
           <>
             {pkps.length > 0 ? (
-              <>
-                <h1>Select a PKP to continue</h1>
-                {/* Select a PKP to create session sigs for */}
-                <div>
-                  {pkps.map(pkp => (
-                    <button
-                      key={pkp.ethAddress}
-                      onClick={async () => await createSession(pkp)}
-                    >
-                      {pkp.ethAddress}
-                    </button>
-                  ))}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <h1>Select a PKP to continue</h1>
+                  {/* Select a PKP to create session sigs for */}
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    {pkps.map(pkp => (
+                      <PKPButton
+                        key={pkp.ethAddress}
+                        onClick={async () => await createSession(pkp)}
+                      >
+                        {pkp.ethAddress}
+                      </PKPButton>
+                    ))}
+                  </div>
                 </div>
-                <hr></hr>
+                <hr style={{ backgroundColor: "#fff" }}></hr>
                 {/* Or mint another PKP */}
-                <p>or mint another one:</p>
-                <button onClick={mint}>Mint another PKP</button>
-              </>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <p>or mint another one:</p>
+                  <MintPKPButton onClick={mint} style={{ display: 'flex', gap: 24, alignItems: 'center', justifyContent: 'center' }}>
+                    <img src='/assets/lit-logo.png' width={42} height={42} />
+                    Mint another PKP
+                  </MintPKPButton>
+                </div>
+              </div>
             ) : (
               <>
                 <h1>Mint a PKP to continue</h1>
@@ -738,7 +811,7 @@ const GoogleMintPKPPage = () => {
           </>
         )}
       </main>
-    </>
+    </div>
   );
 }
 
