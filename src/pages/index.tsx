@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { LitNodeClient } from '@lit-protocol/lit-node-client';
 import Safe, { SafeFactory, SafeAccountConfig } from '@safe-global/protocol-kit'
 
-import { BigNumber, ethers, Transaction } from 'ethers';
+import { BigNumber, ethers, Transaction, utils } from 'ethers';
 import {
   getLoginUrl,
   isSignInRedirect,
@@ -26,6 +26,10 @@ import { EthersAdapter } from '@safe-global/protocol-kit'
 import { ethRequestHandler, } from '@lit-protocol/pkp-ethers'
 import { ETHTxRes } from '@lit-protocol/pkp-ethers/src/lib/pkp-ethers-types';
 import { headers } from '../../next.config';
+import { EIP712_SAFE_TX_TYPE, SafeDomainData, SafeTransaction } from '@/types/eip712safe';
+import { arrayify } from 'ethers/lib/utils';
+import { buildSignatureBytes, SafeSignature } from '@/utils/buildtx';
+
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -62,9 +66,15 @@ const GoogleMintPKPPage = () => {
   const [verified, setVerified] = useState(false);
   const [safeAuth, setSafeAuth] = useState<SafeAuthKit<LitAuthAdapter>>()
   const [isCreateSafeModalOpen, setCreateSafeModalOpen] = useState(false)
-
+  const [isSignSafeTransactionModalOpen, setSignSafeTransactionModalOpen] = useState(false)
   const [address1, setAddress1] = useState('')
   const [address2, setAddress2] = useState('')
+
+  const [domainData, setDomainData] = useState<SafeDomainData>()
+  const [safeTypeData, setSafeTypeData] = useState<SafeTransaction>()
+  const [safeSignature, setSafeSignature] = useState<string>()
+
+  const [firstSignerSignature, setFirstSignerSignature] = useState<SafeSignature>()
 
   console.log("sessionSigs: ", sessionSigs)
   /**
@@ -157,6 +167,39 @@ const GoogleMintPKPPage = () => {
     }
   }
 
+  async function signSafeTransactionLitAction(toSign: Uint8Array) {
+    if (!litNodeClient) return
+    if (!sessionSigs) return
+    if (!currentPKP) return
+    console.log('start lit action')
+    const litActionCode = `
+    const go = async () => {
+      // this requests a signature share from the Lit Node
+      // the signature share will be automatically returned in the response from the node
+      // and combined into a full signature by the LitJsSdk for you to use on the client
+      // all the params (toSign, publicKey, sigName) are passed in from the LitJsSdk.executeJs() function
+      const sigShare = await LitActions.signEcdsa({ toSign, publicKey, sigName });
+
+    };
+    go();
+  `;
+    const results = await litNodeClient.executeJs({
+      code: litActionCode,
+      sessionSigs: sessionSigs,
+      jsParams: {
+        toSign: toSign,
+        publicKey: currentPKP.publicKey,
+        sigName: 'sig1',
+      },
+    });
+    console.log(results)
+    const _signature = results.signatures['sig1'].signature
+    console.log('pkp wallet signature: ', _signature)
+    setSafeSignature(_signature)
+    return _signature
+
+
+  }
   /**
    * Sign a message with current PKP
    */
@@ -316,7 +359,7 @@ const GoogleMintPKPPage = () => {
       method: 'eth_sendTransaction',
       params: [txParams],
     });
-    // await txRes.
+    // await txRes.gi
     console.log("txRes: ", await txRes.wait())
 
     // fetch('/api/create-safe', {
@@ -339,6 +382,55 @@ const GoogleMintPKPPage = () => {
     // // Sign eth_signTransaction request
     // const result = await wallet.signEthereumRequest(payload);
     // console.log('eth_signTransaction result', result);
+
+  }
+  const signSafeTransaction = async () => {
+
+    console.log(domainData)
+    console.log(safeTypeData)
+    console.log(EIP712_SAFE_TX_TYPE)
+    const structHash = ethers.utils._TypedDataEncoder.hash(domainData, EIP712_SAFE_TX_TYPE, safeTypeData)
+    console.log("encoder hash:", structHash)
+    console.log("encoder hash arrarify:", arrayify(structHash))
+    const toSign = arrayify(structHash)
+    const signature = await signSafeTransactionLitAction(toSign)
+    const signatures: SafeSignature[] = [
+      firstSignerSignature,
+      {
+        signer: safeAuth.safeAuthData.eoa,
+        data: signature
+      }
+    ]
+    console.log("safeSignature", signature)
+    console.log("signatures: ", signatures)
+    const signatureBytes = buildSignatureBytes(signatures)
+    console.log('signatureBytes: ', signatureBytes)
+
+    const pkpwallet = safeAuth.getProvider()
+    const from = safeAuth.safeAuthData.eoa;
+    const to = domainData.verifyingContract
+    const value = BigNumber.from(0);
+    const abi = ["function execTransaction(address to, uint256 value, bytes data, uint8 operation, uint256 safeTxGas, uint256 baseGas, uint256 gasPrice, address gasToken, address refundReceiver, bytes signatures)"]
+    const provider = pkpwallet.rpcProvider
+    const contract = new ethers.Contract(to, abi, provider);
+    await pkpwallet.setRpc('https://eth-goerli.g.alchemy.com/v2/SKIuCInnDuvAmdTn6j-WCkiSAGZAiNUr')
+    const unsignedTransaction = await contract.populateTransaction.execTransaction(safeTypeData.to, safeTypeData.value, safeTypeData.data, safeTypeData.operation, safeTypeData.safeTxGas, safeTypeData.baseGas, safeTypeData.gasPrice, safeTypeData.gasToken, safeTypeData.refundReceiver, signatureBytes)
+    const data = unsignedTransaction.data;
+    console.log("unsignedTransaction: ", unsignedTransaction)
+    const txParams = {
+      from,
+      to,
+      chainId: 5,
+      value,
+      data,
+    };
+    const txRes = await pkpwallet.handleRequest<ETHTxRes>({
+      method: 'eth_sendTransaction',
+      params: [txParams],
+    });
+
+    // await txRes.gi
+    console.log("txRes: ", await txRes.wait())
 
   }
   console.log("safeAuth: ", safeAuth?.safeAuthData.eoa)
@@ -451,6 +543,7 @@ const GoogleMintPKPPage = () => {
               <button onClick={signMessage}>Sign message</button>
               <button onClick={createSafeAuthWallet}>Connect safe auth kit</button>
               <button onClick={() => setCreateSafeModalOpen(true)}>Create safe</button>
+              <button onClick={() => setSignSafeTransactionModalOpen(true)}>Sign safe transaction</button>
               <Modal
                 open={isCreateSafeModalOpen}
                 onClose={() => { setCreateSafeModalOpen(false) }}
@@ -491,6 +584,147 @@ const GoogleMintPKPPage = () => {
                 </Box>
                 {/* <Button >Create Safe</Button> */}
 
+              </Modal>
+              <Modal sx={{ overflow: 'scroll' }} open={isSignSafeTransactionModalOpen} onClose={() => { setSignSafeTransactionModalOpen(false) }} aria-labelledby="modal-modal-title" aria-describedby="modal-modal-description">
+                <Box sx={
+                  {
+                    position: 'absolute' as 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: 400,
+                    height: 700,
+                    bgcolor: 'background.paper',
+                    border: '2px solid #000',
+                    boxShadow: 24,
+                    p: 4,
+                    overflow: 'scroll'
+                  }
+                }>
+
+                  <Typography id="modal-modal-title" variant="h6" component="h2">
+                    Sign your safe transaction
+                  </Typography>
+                  <div style={{ dispay: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <Typography>Previous singer data</Typography>
+                    <div>
+                      <TextField label='first signer address' fullWidth onChange={(e) => setFirstSignerSignature({
+                        ...firstSignerSignature,
+                        signer: e.target.value
+                      })}
+                        value={firstSignerSignature?.signer}
+                      />
+                    </div>
+                    <div>
+                      <TextField label='first signer sig' fullWidth onChange={(e) => setFirstSignerSignature({
+                        ...firstSignerSignature,
+                        data: e.target.value
+                      })}
+                        value={firstSignerSignature?.data}
+                      />
+                    </div>
+
+                    <Typography>Domain data</Typography>
+                    <div>
+                      <TextField label='verifying contract' fullWidth onChange={(e) => setDomainData({
+                        ...domainData,
+                        verifyingContract: e.target.value
+                      })}
+                        value={domainData?.verifyingContract}
+                      />
+                    </div>
+                    <div>
+                      <TextField label='chainId' fullWidth onChange={(e) => setDomainData({
+                        ...domainData,
+                        chainId: Number(e.target.value)
+                      })}
+                        value={domainData?.chainId} />
+                    </div>
+                    <Typography>Safe transaction data</Typography>
+                    <div>
+                      <TextField label='to' fullWidth onChange={(e) => setSafeTypeData({
+                        ...safeTypeData,
+                        to: e.target.value
+                      })}
+                        value={safeTypeData?.to} />
+                    </div>
+                    <div>
+                      <TextField label='value' fullWidth onChange={(e) => setSafeTypeData({
+                        ...safeTypeData,
+                        value: e.target.value
+                      })}
+                        value={safeTypeData?.value} />
+                    </div>
+                    <div>
+                      <TextField label='data' fullWidth onChange={(e) => setSafeTypeData({
+                        ...safeTypeData,
+                        data: e.target.value
+                      })}
+                        value={safeTypeData?.data}
+                      />
+                    </div>
+                    <div>
+                      <TextField label='operation' fullWidth onChange={(e) => setSafeTypeData({
+                        ...safeTypeData,
+                        operation: Number(e.target.value)
+                      })}
+                        value={safeTypeData?.operation}
+                      />
+                    </div>
+                    <div>
+                      <TextField label='safeTxGas' fullWidth onChange={(e) => setSafeTypeData({
+                        ...safeTypeData,
+                        safeTxGas: Number(e.target.value)
+                      })}
+                        value={safeTypeData?.safeTxGas}
+                      />
+                    </div>
+                    <div>
+                      <TextField label='baseGas' fullWidth onChange={(e) => setSafeTypeData({
+                        ...safeTypeData,
+                        baseGas: Number(e.target.value)
+                      })}
+                        value={safeTypeData?.baseGas}
+                      />
+                    </div>
+                    <div>
+                      <TextField label='gasPrice' fullWidth onChange={(e) => setSafeTypeData({
+                        ...safeTypeData,
+                        gasPrice: Number(e.target.value)
+                      })}
+                        value={safeTypeData?.gasPrice}
+                      />
+                    </div>
+                    <div>
+                      <TextField label='gasToken' fullWidth onChange={(e) => setSafeTypeData({
+                        ...safeTypeData,
+                        gasToken: e.target.value
+                      })}
+                        value={safeTypeData?.gasToken}
+                      />
+                    </div>
+                    <div>
+                      <TextField label='refundReceiver' fullWidth onChange={(e) => setSafeTypeData({
+                        ...safeTypeData,
+                        refundReceiver: e.target.value
+                      })}
+                        value={safeTypeData?.refundReceiver}
+                      />
+                    </div>
+                    <div>
+                      <TextField label='nonce' fullWidth fullWidth onChange={(e) => setSafeTypeData({
+                        ...safeTypeData,
+                        nonce: Number(e.target.value)
+                      })}
+                        value={safeTypeData?.nonce}
+                      />
+                    </div>
+                    <Typography id="modal-modal-title" variant="h6" component="h2">
+                      {safeSignature}
+                    </Typography>
+                  </div>
+                  <Button variant="outlined" sx={{ marginTop: '32px', width: '100%' }} onClick={signSafeTransaction}>Sign Safe Transaction</Button>
+                </Box>
               </Modal>
 
               {signature && (
