@@ -21,12 +21,9 @@ yarn dev
 3. Visit [http://localhost:3000](http://localhost:3000) to start playing with the app.
 
 Ux optimization strategies
-- we implemented Google Oauth to sign and create safes! Instead of having to pull out your ledger you can simply sign with your google ID. 
-- Relevant aspects are https://github.com/taetaehoho/tokyo-frontend/blob/main/src/auth-kit/LitSafeAuthKit.ts where we made the safe auth sdk work with LitPKPs and https://github.com/taetaehoho/tokyo-frontend/blob/main/src/auth-kit/packs/web3auth/LitAuthAdapter.ts where we created a custom wallet adapter for LitPkps 
-
-Polygon
-- Deployment address: https://mumbai.polygonscan.com/address/0x7d94744acd2f133b3a097c12f1944f0c96f98b90#code
-- Twitter: https://twitter.com/0xtaetaehoho/status/1647379544406626304?s=20
+- use Google Oauth to sign and create safes! 
+- This works via controlling a LitPKP via your Google Oauth (webauthn is supported as well). The Oauth key becomes a signer in an MPC network, the aggregate key shares of which can create an ECDSA signature (EIP712 signature that feeds into SAFE signing) 
+- There is also compatibility between the SAFE Auth SDK and this repo such that people using Safe Auth can use this RELATIVELY out of the box! 
 
 Gnosis
 - Deployment address: https://gnosisscan.io/tx/0x3d7149f48357e55517fc11a415e91f6fbf7f88a7bb7fa3478b7068ab5d9c970d
